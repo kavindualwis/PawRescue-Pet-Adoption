@@ -28,4 +28,4 @@ export const API_BASE_URL =
 	(__DEV__ ? (resolveDevHost() || localFallback) : productionUrl);
 export const PAYHERE_NOTIFY_URL = `${API_BASE_URL}/payments/notify`;
 export const JWT_SECRET = process.env.EXPO_PUBLIC_JWT_SECRET || "";
-export const GOOGLE_MAPS_API_KEY = "AIzaSyCZ1MzvV0ndr3tZZo1TyJ8q01HjjOtBCOU";
+export const GOOGLE_MAPS_API_KEY = "";
