@@ -5,37 +5,44 @@
 
 import { Platform } from 'react-native';
 
-const primaryOrange = '#E8A358';
-const primaryOrangeDark = '#D79247'; // slightly darker for contrast if needed, or same
+const primaryOrange = '#F39334';
+const secondaryOrange = '#FFD7B5';
+const lightYellow = '#FEE6B0';
 
 export const Colors = {
   light: {
     primary: primaryOrange,
-    text: '#11181C',
-    textMuted: '#687076',
-    background: '#FFFFFF',
-    card: '#F5F5F5',
+    secondary: secondaryOrange,
+    accent: lightYellow,
+    text: '#1F1F1F',
+    textMuted: '#7D7D7D',
+    background: '#f8edda',
+    card: '#FFFFFF',
     border: '#EAEAEA',
     tint: primaryOrange,
-    icon: '#687076',
-    tabIconDefault: '#687076',
+    icon: '#2C2C2C',
+    tabIconDefault: '#9BA1A6',
     tabIconSelected: primaryOrange,
-    error: '#E74C3C',
+    error: '#FF5A5A',
     success: '#2ECC71',
+    tabBar: '#1A1A1A',
   },
   dark: {
-    primary: primaryOrangeDark,
+    primary: primaryOrange,
+    secondary: '#3D2C1E',
+    accent: '#3D3D1E',
     text: '#ECEDEE',
     textMuted: '#9BA1A6',
     background: '#151718',
     card: '#222526',
     border: '#2A2E30',
-    tint: primaryOrangeDark,
+    tint: primaryOrange,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
-    tabIconSelected: primaryOrangeDark,
+    tabIconSelected: primaryOrange,
     error: '#CF6679',
     success: '#03DAC6',
+    tabBar: '#0D0D0D',
   },
 };
 

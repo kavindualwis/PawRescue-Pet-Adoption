@@ -40,17 +40,8 @@ export default function SplashScreen() {
     setCurrentSlide(slideIndex);
   };
 
-  const handleContinue = () => {
-    if (currentSlide === slides.length - 1) {
-      router.replace('/login');
-    } else {
-      const nextSlide = currentSlide + 1;
-      setCurrentSlide(nextSlide);
-      scrollViewRef.current?.scrollTo({
-        x: nextSlide * width,
-        animated: true,
-      });
-    }
+  const handleGetStarted = () => {
+    router.replace('/login');
   };
 
   return (
@@ -101,9 +92,9 @@ export default function SplashScreen() {
         </View>
 
         {/* Get Started Button */}
-        <TouchableOpacity style={styles.startButton} onPress={handleContinue}>
+        <TouchableOpacity style={styles.startButton} onPress={handleGetStarted}>
           <ThemedText style={styles.startButtonText}>
-            {currentSlide === slides.length - 1 ? 'Get Started' : 'Get Started'}
+            Get Started
           </ThemedText>
         </TouchableOpacity>
       </View>

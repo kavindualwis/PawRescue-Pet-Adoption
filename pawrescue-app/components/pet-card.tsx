@@ -16,17 +16,44 @@ interface Pet {
   name: string;
   images?: string[];
   status?: string;
+  price?: number;
   [key: string]: any;
 }
 
 const { width } = Dimensions.get("window");
 const cardWidth = (width - 32) / 2;
 
-export const PetCard = ({ pet, onPress, onAddPress, actionButtons }: { pet: Pet; onPress?: () => void; onAddPress?: () => void; actionButtons?: React.ReactNode }) => {
-  const [liked, setLiked] = useState(false);
+export const PetCard = ({
+  pet,
+  onPress,
+  onAddPress,
+  actionButtons,
+  isLiked: initialLiked = false,
+  onLike
+}: {
+  pet: Pet;
+  onPress?: () => void;
+  onAddPress?: () => void;
+  actionButtons?: React.ReactNode;
+  isLiked?: boolean;
+  onLike?: (liked: boolean) => void;
+}) => {
+  const [liked, setLiked] = useState(initialLiked);
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const styles = React.useMemo(() => getStyles(colors), [colors]);
+
+  React.useEffect(() => {
+    setLiked(initialLiked);
+  }, [initialLiked]);
+
+  const handleLikePress = async () => {
+    const newLiked = !liked;
+    setLiked(newLiked);
+    if (onLike) {
+      onLike(newLiked);
+    }
+  };
 
   const getImageUrl = (imageData: string | undefined): string | any => {
     if (imageData && imageData.startsWith("data:")) {
@@ -39,80 +66,48 @@ export const PetCard = ({ pet, onPress, onAddPress, actionButtons }: { pet: Pet;
     ? { uri: getImageUrl(pet.images[0]) }
     : require("@/assets/images/splash_image.png");
 
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case "available":
-        return "#27AE60";
-      case "adopted":
-        return "#3498DB";
-      case "rescue-needed":
-        return "#E74C3C";
-      default:
-        return "#95A5A6";
-    }
-  };
-
-  const formatStatus = (status: string): string => {
-    if (status === "rescue-needed") return "Rescue Needed";
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  };
-
   return (
     <TouchableOpacity
       style={styles.card}
       onPress={onPress}
-      activeOpacity={0.8}
+      activeOpacity={0.9}
     >
-      <View style={styles.imageContainer}>
-        {typeof displayImage.uri === "string" ? (
-          <Image
-            source={displayImage}
-            style={styles.image}
-            resizeMode="cover"
-          />
-        ) : (
-          <Image
-            source={displayImage}
-            style={styles.image}
-            resizeMode="cover"
-          />
-        )}
+      <View style={[styles.imageContainer, { backgroundColor: colors.secondary + '40' }]}>
+        <Image
+          source={displayImage}
+          style={styles.image}
+          resizeMode="cover"
+        />
 
         <TouchableOpacity
           style={styles.likeButton}
-          onPress={() => setLiked(!liked)}
+          onPress={handleLikePress}
         >
           <Ionicons
             name={liked ? "heart" : "heart-outline"}
-            size={24}
-            color={liked ? "#E74C3C" : "#999"}
+            size={18}
+            color={liked ? colors.error : colors.primary}
           />
         </TouchableOpacity>
-
-        {pet.status && (
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: getStatusColor(pet.status) },
-            ]}
-          >
-            <Text style={styles.statusText}>{formatStatus(pet.status)}</Text>
-          </View>
-        )}
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.petName} numberOfLines={1}>
-          {pet.name}
-        </Text>
-        <Text style={styles.breed} numberOfLines={1}>
-          {pet.breed}
-        </Text>
-        <View style={styles.footer}>
-          <View style={styles.infoRow}>
-            <Ionicons name="location-outline" size={12} color={colors.text + '60'} />
-            <Text style={styles.location} numberOfLines={1}>{pet.location}</Text>
-          </View>
+        <View style={styles.namePriceRow}>
+          <Text style={styles.petName} numberOfLines={1}>
+            {pet.name}
+          </Text>
+          <Text style={styles.priceText}>
+            {pet.price === 0 ? 'Free' : pet.price ? `Rs.${pet.price}` : 'Free'}
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="location-outline" size={14} color={colors.textMuted} />
+          <Text style={styles.location} numberOfLines={1}>
+            {pet.location
+              ? pet.location.split(',').slice(-2).join(',').trim()
+              : 'Sydney, CA'}
+          </Text>
         </View>
         {actionButtons && (
           <View style={styles.actionButtonsContainer}>
@@ -124,79 +119,80 @@ export const PetCard = ({ pet, onPress, onAddPress, actionButtons }: { pet: Pet;
   );
 };
 
-const getStyles = (colors: typeof Colors.light & typeof Colors.dark) => StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   card: {
     width: cardWidth,
     backgroundColor: colors.card,
-    borderRadius: 24,
-    overflow: "hidden",
+    borderRadius: 28,
+    padding: 10,
     marginBottom: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: colors.border + '20',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
   imageContainer: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 24,
+    overflow: "hidden",
     position: "relative",
-    height: 180,
-    backgroundColor: colors.text + '05',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   image: {
     width: "100%",
     height: "100%",
+    borderRadius: 24,
   },
   likeButton: {
     position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: colors.background + 'B3', // 70% opacity
-    borderRadius: 20,
-    padding: 6,
-  },
-  statusBadge: {
-    position: "absolute",
-    bottom: 8,
-    left: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    color: "#FFF",
-    fontSize: 10,
-    fontWeight: "600",
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   content: {
-    padding: 12,
+    marginTop: 10,
+    paddingHorizontal: 4,
+  },
+  namePriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   petName: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
     color: colors.text,
-    marginBottom: 2,
-  },
-  breed: {
-    fontSize: 13,
-    color: colors.text + '60',
-    marginBottom: 10,
-    fontWeight: '500',
-  },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flex: 1,
+    marginRight: 8,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 2,
     gap: 4,
   },
   location: {
-    fontSize: 12,
-    color: colors.text + '60',
-    flex: 1,
+    fontSize: 13,
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
+  priceText: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: colors.primary,
   },
   actionButtonsContainer: {
     flexDirection: 'row',
@@ -204,7 +200,7 @@ const getStyles = (colors: typeof Colors.light & typeof Colors.dark) => StyleShe
     marginTop: 12,
     gap: 8,
     borderTopWidth: 1,
-    borderTopColor: colors.border + '20',
-    paddingTop: 12,
+    borderTopColor: colors.border + '10',
+    paddingTop: 10,
   },
 });

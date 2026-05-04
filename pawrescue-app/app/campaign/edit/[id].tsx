@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -25,22 +25,53 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 
 const { width } = Dimensions.get('window');
 
-export default function CreateCampaignScreen() {
+export default function EditCampaignScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
   const [loading, setLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [category, setCategory] = useState('Medical');
   const [animalType, setAnimalType] = useState('');
   const [orgPhoneNumber, setOrgPhoneNumber] = useState('');
-
+  
   const [mainImages, setMainImages] = useState<string[]>([]);
   const [docs, setDocs] = useState<string[]>([]); // Verification documents
+
+  useEffect(() => {
+    if (id) {
+      loadCampaign();
+    } else {
+      setInitialLoad(false);
+    }
+  }, [id]);
+
+  const loadCampaign = async () => {
+    try {
+      setInitialLoad(true);
+      const res = await campaignService.getCampaignById(id);
+      const data = res.data;
+      setTitle(data.title || '');
+      setDescription(data.description || '');
+      setTargetAmount(data.targetAmount?.toString() || '');
+      setCategory(data.category || 'Medical');
+      setAnimalType(data.animalType || '');
+      setOrgPhoneNumber(data.orgPhoneNumber || '');
+      if (data.images) setMainImages(data.images);
+      if (data.verificationDocuments) setDocs(data.verificationDocuments);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to load campaign');
+      router.back();
+    } finally {
+      setInitialLoad(false);
+    }
+  };
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -94,7 +125,7 @@ export default function CreateCampaignScreen() {
 
     try {
       setLoading(true);
-      await campaignService.createCampaign({
+      await campaignService.updateCampaign(id, {
         title,
         description,
         targetAmount: parseFloat(targetAmount),
@@ -102,23 +133,27 @@ export default function CreateCampaignScreen() {
         animalType,
         orgPhoneNumber,
         images: mainImages,
-        verificationDocuments: docs,
+      });
+
+      // Emit an event so that campaigns list and details update!
+      import('react-native').then(({ DeviceEventEmitter }) => {
+        DeviceEventEmitter.emit('campaignDataChanged');
       });
 
       Alert.alert(
-        'Success',
-        'Campaign submitted! Our admins will verify your details and business registration before making it live.',
+        'Success', 
+        'Campaign updated successfully!',
         [{ text: 'OK', onPress: () => router.back() }]
       );
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to submit campaign');
+      Alert.alert('Error', error.response?.data?.message || 'Failed to update campaign');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1, backgroundColor: colors.background }}
     >
@@ -126,10 +161,15 @@ export default function CreateCampaignScreen() {
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.text + '05' }]} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Start Campaign</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Campaign</Text>
         <View style={{ width: 40 }} />
       </View>
 
+      {initialLoad ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Basic Information</Text>
@@ -187,10 +227,10 @@ export default function CreateCampaignScreen() {
           <Text style={[styles.label, { color: colors.textMuted }]}>Category</Text>
           <View style={styles.categoryRow}>
             {['Medical', 'Rescue', 'Shelter', 'Food'].map((cat: string) => (
-              <TouchableOpacity
+              <TouchableOpacity 
                 key={cat}
                 style={[
-                  styles.catChip,
+                  styles.catChip, 
                   { backgroundColor: category === cat ? colors.primary : colors.card }
                 ]}
                 onPress={() => setCategory(cat)}
@@ -210,7 +250,7 @@ export default function CreateCampaignScreen() {
             {docs.map((uri: string, index: number) => (
               <View key={index} style={styles.imageWrapper}>
                 <Image source={{ uri }} style={styles.previewImage} />
-                <TouchableOpacity
+                <TouchableOpacity 
                   style={styles.removeBtn}
                   onPress={() => setDocs(docs.filter((_, i) => i !== index))}
                 >
@@ -218,8 +258,8 @@ export default function CreateCampaignScreen() {
                 </TouchableOpacity>
               </View>
             ))}
-            <TouchableOpacity
-              style={[styles.addCard, { backgroundColor: colors.card, borderColor: colors.primary + '40' }]}
+            <TouchableOpacity 
+              style={[styles.addCard, { backgroundColor: colors.card, borderColor: colors.primary + '40' }]} 
               onPress={pickDocument}
             >
               <Ionicons name="document-attach-outline" size={32} color={colors.primary} />
@@ -234,7 +274,7 @@ export default function CreateCampaignScreen() {
             {mainImages.map((uri: string, index: number) => (
               <View key={index} style={styles.imageWrapper}>
                 <Image source={{ uri }} style={styles.previewImage} />
-                <TouchableOpacity
+                <TouchableOpacity 
                   style={styles.removeBtn}
                   onPress={() => setMainImages(mainImages.filter((_, i) => i !== index))}
                 >
@@ -242,8 +282,8 @@ export default function CreateCampaignScreen() {
                 </TouchableOpacity>
               </View>
             ))}
-            <TouchableOpacity
-              style={[styles.addCard, { backgroundColor: colors.card, borderColor: colors.primary + '40' }]}
+            <TouchableOpacity 
+              style={[styles.addCard, { backgroundColor: colors.card, borderColor: colors.primary + '40' }]} 
               onPress={pickImage}
             >
               <Ionicons name="image-outline" size={32} color={colors.primary} />
@@ -252,7 +292,7 @@ export default function CreateCampaignScreen() {
           </ScrollView>
         </View>
 
-        <TouchableOpacity
+        <TouchableOpacity 
           style={[styles.submitBtn, { backgroundColor: colors.primary }]}
           onPress={handleSubmit}
           disabled={loading}
@@ -260,10 +300,11 @@ export default function CreateCampaignScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.submitBtnText}>Submit for Verification</Text>
+            <Text style={styles.submitBtnText}>Update Campaign</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -276,7 +317,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 15,
   },
-  backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f5f5f5', justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
   scrollContent: { padding: 20, paddingBottom: 100 },
   section: { marginBottom: 30 },
